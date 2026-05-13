@@ -390,7 +390,7 @@
             for (let form of formacoesList) {
                 totalRealizado += registrosEscola[form.nome]?.realizado || 0;
             }
-            const totalEsperado = previsto * totalFormacoes;
+            const totalEsperado = previsto * 1;
             const percentual = totalEsperado > 0 ? (totalRealizado / totalEsperado) * 100 : 0;
             let farol = percentual >= 80 ? "🟢 Verde" : (percentual >= 50 ? "🟡 Amarelo" : "🔴 Vermelho");
             linhas.push(`<tr><td>${escola}</td><td>${previsto}</td><td>${totalRealizado}</td><td>${Math.round(percentual)}%</td><td>${farol}</td></tr>`);
@@ -402,7 +402,7 @@
         div.style.backgroundColor = 'white';
         div.style.color = 'black';
         div.style.padding = '30px';
-        div.style.width = '1100px';
+        div.style.width = '1400px';
         div.style.fontFamily = 'Inter, sans-serif';
         div.innerHTML = `
             <div style="text-align:center; margin-bottom:25px;">
@@ -419,13 +419,13 @@
             <p style="margin-top:20px;">Legenda: Farol Verde (≥80%) | Amarelo (50%-79%) | Vermelho (<50%)</p>
         `;
         document.body.appendChild(div);
-        const canvas = await html2canvas(div, { scale: 2 });
+        const canvas = await html2canvas(div, { scale: 1 });
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('landscape', 'mm', 'a4');
-        const imgWidth = 280;
+        const pdf = new jsPDF('Portrait', 'mm', 'a4');
+        const imgWidth = 205;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
         pdf.save(`Relatorio_Participacao_Formacoes.pdf`);
         document.body.removeChild(div);
     }
