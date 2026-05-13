@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>URE Caieiras · Acompanhamento de Formações · Participação</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #0a2f6c 0%, #041a3a 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #eef3fb;
+        }
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #0f1a24e0;
+            border-radius: 48px;
+            padding: 24px;
+            box-shadow: 0 30px 35px rgba(0,0,0,0.5);
+            border: 1px solid #d32f2f;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0a2f6ccc;
+            backdrop-filter: blur(4px);
+            padding: 12px 24px;
+            border-radius: 60px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-area img { max-height: 50px; background: white; border-radius: 12px; padding: 4px; }
+        .title-badge { background: #d32f2f; color: white; padding: 6px 18px; border-radius: 3rem; font-weight: bold; }
+        h1 { font-size: 1.7rem; font-weight: 800; color: #ffec9e; text-align: center; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        .report-bar { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 25px; }
+        button {
+            background: linear-gradient(135deg, #0a2f6c, #052050);
+            border: none;
+            padding: 10px 22px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.1s;
+            font-size: 0.85rem;
+        }
+        button.primary { background: linear-gradient(135deg, #27ae60, #1e8449); }
+        button.pdf-btn { background: linear-gradient(135deg, #b6570f, #8e3a0a); }
+        button.danger { background: linear-gradient(135deg, #c0392b, #a93226); }
+        button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+        .dashboard-section { margin-bottom: 40px; }
+        .section-title { font-size: 1.3rem; margin-bottom: 20px; border-left: 5px solid #f4c542; padding-left: 15px; }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 22px;
+        }
+        .card {
+            background: #1e2a36;
+            border-radius: 32px;
+            padding: 18px;
+            cursor: pointer;
+            transition: 0.1s;
+            border-left: 6px solid #6c757d;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .card.verde { border-left-color: #2ecc71; background: #1a2e28; }
+        .card.amarelo { border-left-color: #f39c12; background: #2e2a1f; }
+        .card.vermelho { border-left-color: #e74c3c; background: #2a1f24; }
+        .card-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; margin-bottom: 12px; }
+        .school-name { font-weight: 800; font-size: 1rem; color: #ffec9e; }
+        .progress-bar-container { background: #2c3e3f; border-radius: 20px; height: 12px; margin: 12px 0; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; border-radius: 20px; transition: width 0.3s; }
+        .fill-verde { background: #2ecc71; }
+        .fill-amarelo { background: #f39c12; }
+        .fill-vermelho { background: #e74c3c; }
+        .stats { display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 8px; }
+        .form-section {
+            background: #0f1a24cc;
+            border-radius: 32px;
+            padding: 24px;
+            margin-top: 30px;
+            border: 1px solid #d32f2f;
+        }
+        .form-row { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 180px; }
+        label { font-weight: 600; font-size: 0.75rem; color: #ffec9e; display: block; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 10px 14px; border-radius: 28px; border: none; background: #2c3e3f; color: white; font-size: 0.85rem; }
+        .registros-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.8rem; }
+        .registros-table th, .registros-table td { border: 1px solid #3a5a6a; padding: 10px; text-align: left; vertical-align: middle; }
+        .registros-table th { background: #0a2f6c; color: #ffec9e; }
+        .btn-icon { background: none; padding: 4px 10px; margin: 0 4px; border-radius: 20px; }
+        .btn-icon i { pointer-events: none; }
+        .btn-salvar-formacao { background: #27ae60; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; }
+        footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #b4c8e0; }
+        @media (max-width: 800px) { .form-row { flex-direction: column; } }
+        .loading { text-align: center; padding: 40px; }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <div class="header">
+        <div class="logo-area">
+            <img src="https://i.ibb.co/0p01LzxB/logo3de.jpg" alt="Logo SEDUC" onerror="this.src='https://via.placeholder.com/50?text=SEDUC'">
+            <span>URE Caieiras · Formações 2026</span>
+        </div>
+        <div class="title-badge">🎓 Participação por Formação</div>
+    </div>
+    <h1><i class="fas fa-users"></i> Público Alvo Previsto × Realizado · Farol de Participação</h1>
+    <div class="report-bar">
+        <button id="gerarPDFGeral" class="pdf-btn"><i class="fas fa-file-pdf"></i> Relatório PDF Geral</button>
+    </div>
+
+    <!-- DASHBOARD CARDS -->
+    <div class="dashboard-section">
+        <div class="section-title"><i class="fas fa-chart-line"></i> Situação das Escolas (Farol por participação total)</div>
+        <div id="cardsContainer" class="cards-grid">Carregando escolas...</div>
+    </div>
+
+    <!-- SEÇÃO DE REGISTRO -->
+    <div class="form-section">
+        <div class="section-title"><i class="fas fa-edit"></i> Registrar Público Realizado por Formação</div>
+        <div class="form-row">
+            <div class="form-group"><label>🏫 Escola *</label><select id="escolaSelect"><option value="">Selecione a escola</option></select></div>
+        </div>
+        <div style="margin-top: 20px;">
+            <div id="registrosTableContainer" style="overflow-x: auto;">
+                <table class="registros-table" id="registrosTable">
+                    <thead><tr><th>Formação (Data)</th><th>Público Previsto (docentes)</th><th>Público Realizado</th><th>Ações</th></tr></thead>
+                    <tbody id="registrosTableBody"><tr><td colspan="4">Selecione uma escola para visualizar/editar os públicos realizados</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <footer>✅ Farol calculado com base na soma dos Realizados ÷ (Previsto × 1 formações). Verde ≥80% | Amarelo 50%-79% | Vermelho <50%.</footer>
+</div>
+
+<script>
+    // ========== FIREBASE CONFIG ==========
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHgd5UbrdeXCsfDezkzMEskl0tc4QcBQU",
+        authDomain: "ure-caieiras-conselho.firebaseapp.com",
+        projectId: "ure-caieiras-conselho",
+        storageBucket: "ure-caieiras-conselho.firebasestorage.app",
+        messagingSenderId: "713109651546",
+        appId: "1:713109651546:web:44b5e50404f3ea50715863"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ========== LISTA DE ESCOLAS COM PÚBLICO PREVISTO (conforme tabela fornecida) ==========
+    const escolasPrevisto = {
+        "CARLOS AUGUSTO DE PADUA FLEURY PROF": 26,
+        "PEDRO GALRAO DO NASCIMENTO": 24,
+        "WALTHER WEISZFLOG": 16,
+        "FRANCISCO GONCALVES VIEIRA PROF": 43,
+        "JOSE ROBERTO MELCHIOR DR": 51,
+        "WALTER RIBAS DE ANDRADE PROF EE": 19,
+        "ALFRIED THEODOR WEISZFLOG": 35,
+        "ELCIO JOSE PEREIRA COTRIM PROF": 30,
+        "JOAQUIM MARQUES DA SILVA SOBRINHO TTE": 27,
+        "ODARICO OLIVEIRA NASCIMENTO PROF": 16,
+        "JOSE PARADA PROFESSOR": 42,
+        "NAIR HANNICKEL ROMARO": 14,
+        "NIDE ZAIM CARDOSO PROFA": 35,
+        "LENITA CORREA CAMARGO PROFA": 39,
+        "JARDIM SAO FRANCISCO": 22,
+        "DOMINGOS CAMBIAGHI PROF": 58,
+        "ARTHUR WEINGRILL": 28,
+        "OTTO WEISZFLOG": 44,
+        "HERMELINA DE ALBUQUERQUE PASSARELLA PROFA": 70,
+        "ULYSSES SANCHES RAMIRES PROF": 35,
+        "ARMANDO SESTINI": 22,
+        "PEDRO PAULO DE AGUIAR": 39,
+        "ALBINO FIORE": 20,
+        "OZILDE ALBUQUERQUE PASSARELLA DR": 31,
+        "ELVIRA PARADA MANGA PROFA": 57,
+        "ALADINO POLON": 26,
+        "LYDIA SCALET WALKER PROFA": 39,
+        "BENEDITO FAGUNDES MARQUES": 34,
+        "BUENO DE AZEVEDO FILHO PROF": 34,
+        "ALBERTO GRAF CAPITAO": 40,
+        "MARIA ZEZA GOMES DE OLIVEIRA": 23,
+        "JOSE CARLOS DA SILVA JUNIOR": 27,
+        "BELEM DA SERRA": 42,
+        "IRACI SARTORI VIEIRA DA SILVA PROFA": 45,
+        "VINCENZO LOBASSI": 23,
+        "APARECIDO ROBERTO TONELLOTTI PROFESSOR": 55,
+        "BENEDITO APARECIDO TAVARES PROF": 40,
+        "CHACARA CAMPONESA JARDIM VASSOURAS": 48,
+        "JOSE DE BARROS MARTINS EDITOR": 41,
+        "BAIRRO JUNDIAIZINHO": 33,
+        "DR. NELSON MANZANARES": 34,
+        "ADAIL JARBAS DUCLOS": 28,
+        "OLINDO DARTORA DR": 28,
+        "JARDIM SILVIA II": 75,
+        "PAULO DUARTE": 29,
+        "LUIZ ALEXANDRE DOS SANTOS VEREADOR": 39,
+        "ZILTON BICUDO PROF": 39,
+        "DR. MARIO TOLEDO DE MORAES": 84,
+        "ISAURA VALENTINI HANSER PROFA": 34,
+        "SUZANA DIAS": 35,
+        "ANA MARIA GARRIDO ORLANDIN PROFA": 47,
+        "JARDIM ALEGRIA II": 49,
+        "ROGERIO LEVORIN PROF": 53,
+        "IVONE DOS ANJOS DA SILVA CAMPOS PROFA": 29,
+        "ISAURA DE MIRANDA BOTTO PROFA": 44,
+        "PIETRO PETRI": 47,
+        "PARQUE CENTO E VINTE II": 66,
+        "JARDIM DAS ROSAS": 50,
+        "RITUCO MITANI PROFA": 34,
+        "CELESTINA VALENTE LENGENFELDER PROFA": 52,
+        "AZEVEDO SOARES": 79,
+        "PEDRO LELIS DE SOUZA PREFEITO": 40,
+        "BAIRRO DO ITAIM": 21,
+        "AFONSO MORENO": 43,
+        "JOCIMARA VIEIRA DA SILVA PROFA": 46,
+        "ISAIAS LUIZ MATIAZZO": 25,
+        "KATIA MARIA TARIFA LEME TONELLI PROFA": 60
+    };
+
+    const escolasList = Object.keys(escolasPrevisto).sort();
+
+    // Lista de formações com data
+    const formacoesList = [
+        { nome: "Plataformas Leia e Redação", data: "05/02/2026" },
+        { nome: "Tecnologia", data: "09/03/2026" },
+        { nome: "Matemática", data: "12/03/2026" },
+        { nome: "Língua Portuguesa", data: "17/03/2026" },
+        { nome: "Ciências Humanas", data: "19/03/2026" },
+        { nome: "Anos Iniciais", data: "24/03/2026" },
+        { nome: "Linguagens", data: "26/03/2026" },
+        { nome: "Ciências da Natureza", data: "01/04/2026" }
+    ];
+
+    let registrosCache = {}; // { escola: { formacaoNome: { realizado, id } } }
+    let currentEscola = null;
+
+    // ========== FIRESTORE CRUD ==========
+    async function carregarTodosRegistros() {
+        const snapshot = await db.collection("formacoes_participacao").get();
+        const registros = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const escola = data.escola;
+            const formacao = data.formacaoNome;
+            if (!registros[escola]) registros[escola] = {};
+            registros[escola][formacao] = { realizado: data.realizado || 0, id: doc.id };
+        });
+        registrosCache = registros;
+        return registros;
+    }
+
+    async function salvarRealizado(escola, formacaoNome, realizado) {
+        const previsto = escolasPrevisto[escola];
+        if (previsto === undefined) return;
+        const existing = registrosCache[escola]?.[formacaoNome];
+        const data = {
+            escola,
+            formacaoNome,
+            previsto,
+            realizado: parseInt(realizado) || 0,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (existing && existing.id) {
+            await db.collection("formacoes_participacao").doc(existing.id).update(data);
+            registrosCache[escola][formacaoNome].realizado = data.realizado;
+        } else {
+            const docRef = await db.collection("formacoes_participacao").add(data);
+            if (!registrosCache[escola]) registrosCache[escola] = {};
+            registrosCache[escola][formacaoNome] = { realizado: data.realizado, id: docRef.id };
+        }
+        await renderDashboard();
+        if (currentEscola === escola) await carregarTabelaRegistros(escola);
+    }
+
+    // ========== DASHBOARD CARDS ==========
+    async function renderDashboard() {
+        const container = document.getElementById("cardsContainer");
+        if (!container) return;
+        container.innerHTML = "";
+        const totalFormacoes = formacoesList.length;
+        for (let escola of escolasList) {
+            const previsto = escolasPrevisto[escola];
+            const registrosEscola = registrosCache[escola] || {};
+            let totalRealizado = 0;
+            for (let form of formacoesList) {
+                const realiz = registrosEscola[form.nome]?.realizado || 0;
+                totalRealizado += realiz;
+            }
+            const totalEsperado = previsto * 1;
+            const percentual = totalEsperado > 0 ? (totalRealizado / totalEsperado) * 100 : 0;
+            let corClasse = "vermelho";
+            let corProgresso = "fill-vermelho";
+            if (percentual >= 80) { corClasse = "verde"; corProgresso = "fill-verde"; }
+            else if (percentual >= 50) { corClasse = "amarelo"; corProgresso = "fill-amarelo"; }
+            
+            const card = document.createElement("div");
+            card.className = `card ${corClasse}`;
+            card.dataset.escola = escola;
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="school-name">${escola}</span>
+                    <span style="font-size:0.7rem;">Previsto: ${previsto} docentes</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-fill ${corProgresso}" style="width: ${Math.min(100, percentual)}%;"></div>
+                </div>
+                <div class="stats">
+                    <span>✅ Total Realizado: ${totalRealizado}</span>
+                    <span>📊 ${Math.round(percentual)}%</span>
+                </div>
+                <div style="font-size:0.7rem; margin-top:8px;">🎯 Esperado: ${totalEsperado} participações</div>
+            `;
+            card.addEventListener("click", () => {
+                document.getElementById("escolaSelect").value = escola;
+                currentEscola = escola;
+                carregarTabelaRegistros(escola);
+                window.scrollTo({ top: document.querySelector(".form-section").offsetTop - 20, behavior: "smooth" });
+            });
+            container.appendChild(card);
+        }
+    }
+
+    // ========== TABELA DE REGISTROS POR ESCOLA ==========
+    async function carregarTabelaRegistros(escola) {
+        const tbody = document.getElementById("registrosTableBody");
+        if (!tbody) return;
+        const previsto = escolasPrevisto[escola];
+        const registrosEscola = registrosCache[escola] || {};
+        tbody.innerHTML = "";
+        for (let form of formacoesList) {
+            const realizadoAtual = registrosEscola[form.nome]?.realizado || 0;
+            const row = tbody.insertRow();
+            row.insertCell(0).innerText = `${form.nome} (${form.data})`;
+            row.insertCell(1).innerText = previsto;
+            const cellRealizado = row.insertCell(2);
+            const input = document.createElement("input");
+            input.type = "number";
+            input.value = realizadoAtual;
+            input.min = 0;
+            input.max = previsto;
+            input.style.width = "100px";
+            input.style.padding = "6px";
+            input.style.borderRadius = "20px";
+            input.style.background = "#2c3e3f";
+            input.style.color = "white";
+            input.style.border = "none";
+            cellRealizado.appendChild(input);
+            const cellAcao = row.insertCell(3);
+            const btnSalvar = document.createElement("button");
+            btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            btnSalvar.className = "btn-salvar-formacao";
+            btnSalvar.style.background = "#27ae60";
+            btnSalvar.style.padding = "4px 12px";
+            btnSalvar.style.borderRadius = "20px";
+            btnSalvar.onclick = async () => {
+                const novoValor = parseInt(input.value) || 0;
+                if (novoValor > previsto) {
+                    alert(`O público realizado não pode exceder o previsto (${previsto})`);
+                    input.value = Math.min(previsto, realizadoAtual);
+                    return;
+                }
+                await salvarRealizado(escola, form.nome, novoValor);
+                alert(`Registro salvo: ${form.nome} → ${novoValor}/${previsto}`);
+            };
+            cellAcao.appendChild(btnSalvar);
+        }
+    }
+
+    // ========== PDF GERAL ==========
+    async function gerarPDFGeral() {
+        const linhas = [];
+        const totalFormacoes = formacoesList.length;
+        for (let escola of escolasList) {
+            const previsto = escolasPrevisto[escola];
+            const registrosEscola = registrosCache[escola] || {};
+            let totalRealizado = 0;
+            for (let form of formacoesList) {
+                totalRealizado += registrosEscola[form.nome]?.realizado || 0;
+            }
+            const totalEsperado = previsto * totalFormacoes;
+            const percentual = totalEsperado > 0 ? (totalRealizado / totalEsperado) * 100 : 0;
+            let farol = percentual >= 80 ? "🟢 Verde" : (percentual >= 50 ? "🟡 Amarelo" : "🔴 Vermelho");
+            linhas.push(`<tr><td>${escola}</td><td>${previsto}</td><td>${totalRealizado}</td><td>${Math.round(percentual)}%</td><td>${farol}</td></tr>`);
+        }
+        const div = document.createElement('div');
+        div.style.position = 'fixed';
+        div.style.top = '-9999px';
+        div.style.left = '-9999px';
+        div.style.backgroundColor = 'white';
+        div.style.color = 'black';
+        div.style.padding = '30px';
+        div.style.width = '1100px';
+        div.style.fontFamily = 'Inter, sans-serif';
+        div.innerHTML = `
+            <div style="text-align:center; margin-bottom:25px;">
+                <h2 style="color:#0a2f6c;">URE CAIEIRAS - Relatório de Participação nas Formações</h2>
+                <h3>Público Previsto × Realizado (Total)</h3>
+                <p>Total de escolas: ${escolasList.length} | Formações: ${totalFormacoes}</p>
+                <p>Esperado total = (Previsto por escola) × ${totalFormacoes}</p>
+                <p>Gerado em ${new Date().toLocaleString()}</p>
+            </div>
+            <table border="1" cellpadding="6" style="width:100%; border-collapse:collapse;">
+                <thead><tr style="background:#0a2f6c; color:white;"><th>Escola</th><th>Previsto</th><th>Realizado (Total)</th><th>Percentual</th><th>Farol</th></tr></thead>
+                <tbody>${linhas.join('')}</tbody>
+            </table>
+            <p style="margin-top:20px;">Legenda: Farol Verde (≥80%) | Amarelo (50%-79%) | Vermelho (<50%)</p>
+        `;
+        document.body.appendChild(div);
+        const canvas = await html2canvas(div, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('landscape', 'mm', 'a4');
+        const imgWidth = 280;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        pdf.save(`Relatorio_Participacao_Formacoes.pdf`);
+        document.body.removeChild(div);
+    }
+
+    // ========== POPULAR SELECTS ==========
+    function popularSelectEscola() {
+        const select = document.getElementById("escolaSelect");
+        select.innerHTML = '<option value="">Selecione a escola</option>';
+        escolasList.forEach(escola => {
+            const opt = document.createElement("option");
+            opt.value = escola;
+            opt.textContent = escola;
+            select.appendChild(opt);
+        });
+    }
+
+    document.getElementById("escolaSelect").addEventListener("change", async (e) => {
+        const escola = e.target.value;
+        if (!escola) {
+            document.getElementById("registrosTableBody").innerHTML = '<tr><td colspan="4">Selecione uma escola para visualizar/editar</td></tr>';
+            currentEscola = null;
+            return;
+        }
+        currentEscola = escola;
+        await carregarTabelaRegistros(escola);
+    });
+
+    document.getElementById("gerarPDFGeral").addEventListener("click", gerarPDFGeral);
+
+    // ========== INIT ==========
+    (async function init() {
+        popularSelectEscola();
+        await carregarTodosRegistros();
+        await renderDashboard();
+    })();
+</script>
+</body>
+</html>
