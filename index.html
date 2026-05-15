@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>URE Caieiras · Acompanhamento de Formações · Participação</title>
+    <title>URE Caieiras · Acompanhamento de Formações · Participação Global</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -106,6 +106,74 @@
         footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #b4c8e0; }
         @media (max-width: 800px) { .form-row { flex-direction: column; } }
         .loading { text-align: center; padding: 40px; }
+        
+        /* estilos da barra única global */
+        .global-summary-wrapper {
+            margin-bottom: 35px;
+        }
+        .global-card {
+            background: #122231e0;
+            backdrop-filter: blur(2px);
+            border-radius: 36px;
+            padding: 20px 28px;
+            transition: all 0.2s;
+            border: 1px solid rgba(211, 47, 47, 0.4);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .global-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+        .global-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffec9e, #f7b731);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .global-badge {
+            background: #0a2f6c;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.3px;
+            border-left: 3px solid #f4c542;
+        }
+        .global-numbers {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+            background: #0a1a28a0;
+            padding: 12px 18px;
+            border-radius: 28px;
+        }
+        .global-numbers span {
+            font-size: 0.9rem;
+        }
+        .global-numbers strong {
+            font-size: 1.1rem;
+            color: #ffec9e;
+        }
+        .progress-global {
+            margin: 12px 0 8px;
+        }
+        .global-footer-note {
+            font-size: 0.7rem;
+            text-align: right;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -117,18 +185,42 @@
         </div>
         <div class="title-badge">🎓 Participação por Formação</div>
     </div>
-    <h1><i class="fas fa-users"></i> Público Alvo Previsto × Realizado · Farol de Participação</h1>
+    <h1><i class="fas fa-chalkboard-user"></i> Público Alvo Previsto × Realizado · Farol de Participação</h1>
     <div class="report-bar">
         <button id="gerarPDFGeral" class="pdf-btn"><i class="fas fa-file-pdf"></i> Relatório PDF Geral</button>
     </div>
 
-    <!-- DASHBOARD CARDS -->
+    <!-- █████ BARRA ÚNICA GLOBAL - AGREGADO TOTAL DE TODAS ESCOLAS E FORMAÇÕES █████ -->
+    <div class="global-summary-wrapper" id="globalSummaryArea">
+        <div class="global-card" id="globalDynamicCard">
+            <div class="global-header-flex">
+                <div class="global-title">
+                    <i class="fas fa-chart-simple" style="color: #f4c542;"></i> 
+                    FAROL GLOBAL · PARTICIPAÇÃO CONSOLIDADA
+                </div>
+                <div class="global-badge" id="globalFarolStatus">🔄 Carregando...</div>
+            </div>
+            <div class="global-numbers" id="globalNumbersBlock">
+                <span>✅ Realizado total: <strong id="globalRealizado">--</strong></span>
+                <span>🎯 Esperado total: <strong id="globalEsperado">--</strong></span>
+                <span>📊 Percentual: <strong id="globalPercentual">--%</strong></span>
+            </div>
+            <div class="progress-bar-container progress-global" style="background: #1f3b3f;">
+                <div class="progress-fill" id="globalProgressFill" style="width: 0%;"></div>
+            </div>
+            <div class="global-footer-note">
+                <i class="fas fa-school-circle-check"></i> Meta geral: soma de todos os públicos previstos (cada escola × 8 formações) vs. total de participações registradas.
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD CARDS POR ESCOLA -->
     <div class="dashboard-section">
         <div class="section-title"><i class="fas fa-chart-line"></i> Situação das Escolas (Farol por participação total)</div>
         <div id="cardsContainer" class="cards-grid">Carregando escolas...</div>
     </div>
 
-    <!-- SEÇÃO DE REGISTRO -->
+    <!-- SEÇÃO DE REGISTRO INDIVIDUAL POR FORMAÇÃO -->
     <div class="form-section">
         <div class="section-title"><i class="fas fa-edit"></i> Registrar Público Realizado por Formação</div>
         <div class="form-row">
@@ -137,13 +229,14 @@
         <div style="margin-top: 20px;">
             <div id="registrosTableContainer" style="overflow-x: auto;">
                 <table class="registros-table" id="registrosTable">
-                    <thead><tr><th>Formação (Data)</th><th>Público Previsto (docentes)</th><th>Público Realizado</th><th>Ações</th></tr></thead>
+                    <thead><th>Formação (Data)</th><th>Público Previsto (docentes)</th><th>Público Realizado</th><th>Ações</th></tr></thead>
                     <tbody id="registrosTableBody"><tr><td colspan="4">Selecione uma escola para visualizar/editar os públicos realizados</td></tr></tbody>
                 </table>
             </div>
         </div>
     </div>
-    <footer>✅ Farol calculado com base na soma dos Realizados ÷ (Previsto × 1 formações). Verde ≥80% | Amarelo 50%-79% | Vermelho <50%.</footer>
+    <footer>✅ Farol escolas: com base na soma dos Realizados ÷ Previsto. Verde ≥80% | Amarelo 50%-79% | Vermelho <50%.<br>
+    🌍 Farol Global: total de participações realizadas em todas as formações e escolas ÷ (Soma dos previstos das escolas × 8 formações).</footer>
 </div>
 
 <script>
@@ -159,80 +252,79 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ========== LISTA DE ESCOLAS COM PÚBLICO PREVISTO (conforme tabela fornecida) ==========
-    const escolasPrevisto = {
-        "CARLOS AUGUSTO DE PADUA FLEURY PROF": 26,
-        "PEDRO GALRAO DO NASCIMENTO": 24,
-        "WALTHER WEISZFLOG": 16,
-        "FRANCISCO GONCALVES VIEIRA PROF": 43,
-        "JOSE ROBERTO MELCHIOR DR": 51,
-        "WALTER RIBAS DE ANDRADE PROF EE": 19,
-        "ALFRIED THEODOR WEISZFLOG": 35,
-        "ELCIO JOSE PEREIRA COTRIM PROF": 30,
-        "JOAQUIM MARQUES DA SILVA SOBRINHO TTE": 27,
-        "ODARICO OLIVEIRA NASCIMENTO PROF": 16,
-        "JOSE PARADA PROFESSOR": 42,
-        "NAIR HANNICKEL ROMARO": 14,
-        "NIDE ZAIM CARDOSO PROFA": 35,
-        "LENITA CORREA CAMARGO PROFA": 39,
-        "JARDIM SAO FRANCISCO": 22,
-        "DOMINGOS CAMBIAGHI PROF": 58,
-        "ARTHUR WEINGRILL": 28,
-        "OTTO WEISZFLOG": 44,
-        "HERMELINA DE ALBUQUERQUE PASSARELLA PROFA": 70,
-        "ULYSSES SANCHES RAMIRES PROF": 35,
-        "ARMANDO SESTINI": 22,
-        "PEDRO PAULO DE AGUIAR": 39,
-        "ALBINO FIORE": 20,
-        "OZILDE ALBUQUERQUE PASSARELLA DR": 31,
-        "ELVIRA PARADA MANGA PROFA": 57,
-        "ALADINO POLON": 26,
-        "LYDIA SCALET WALKER PROFA": 39,
-        "BENEDITO FAGUNDES MARQUES": 34,
-        "BUENO DE AZEVEDO FILHO PROF": 34,
-        "ALBERTO GRAF CAPITAO": 40,
-        "MARIA ZEZA GOMES DE OLIVEIRA": 23,
-        "JOSE CARLOS DA SILVA JUNIOR": 27,
-        "BELEM DA SERRA": 42,
-        "IRACI SARTORI VIEIRA DA SILVA PROFA": 45,
-        "VINCENZO LOBASSI": 23,
-        "APARECIDO ROBERTO TONELLOTTI PROFESSOR": 55,
-        "BENEDITO APARECIDO TAVARES PROF": 40,
-        "CHACARA CAMPONESA JARDIM VASSOURAS": 48,
-        "JOSE DE BARROS MARTINS EDITOR": 41,
-        "BAIRRO JUNDIAIZINHO": 33,
-        "DR. NELSON MANZANARES": 34,
-        "ADAIL JARBAS DUCLOS": 28,
-        "OLINDO DARTORA DR": 28,
-        "JARDIM SILVIA II": 75,
-        "PAULO DUARTE": 29,
-        "LUIZ ALEXANDRE DOS SANTOS VEREADOR": 39,
-        "ZILTON BICUDO PROF": 39,
-        "DR. MARIO TOLEDO DE MORAES": 84,
-        "ISAURA VALENTINI HANSER PROFA": 34,
-        "SUZANA DIAS": 35,
-        "ANA MARIA GARRIDO ORLANDIN PROFA": 47,
-        "JARDIM ALEGRIA II": 49,
-        "ROGERIO LEVORIN PROF": 53,
-        "IVONE DOS ANJOS DA SILVA CAMPOS PROFA": 29,
-        "ISAURA DE MIRANDA BOTTO PROFA": 44,
-        "PIETRO PETRI": 47,
-        "PARQUE CENTO E VINTE II": 66,
-        "JARDIM DAS ROSAS": 50,
-        "RITUCO MITANI PROFA": 34,
-        "CELESTINA VALENTE LENGENFELDER PROFA": 52,
-        "AZEVEDO SOARES": 79,
-        "PEDRO LELIS DE SOUZA PREFEITO": 40,
-        "BAIRRO DO ITAIM": 21,
-        "AFONSO MORENO": 43,
-        "JOCIMARA VIEIRA DA SILVA PROFA": 46,
-        "ISAIAS LUIZ MATIAZZO": 25,
-        "KATIA MARIA TARIFA LEME TONELLI PROFA": 60
-    };
+    // ========== DADOS BASE (PREVISTO POR ESCOLA + FORMAÇÕES) ==========
+   const escolasPrevisto = {
+    "ADAIL JARBAS DUCLOS": 27,
+    "AFONSO MORENO": 43,
+    "ALADINO POLON": 18,
+    "ALBERTO GRAF CAPITAO": 40,
+    "ALBINO FIORE": 19,
+    "ALFRIED THEODOR WEISZFLOG": 33,
+    "ANA MARIA GARRIDO ORLANDIN PROFA": 43,
+    "APARECIDO ROBERTO TONELLOTTI PROFESSOR": 70,
+    "ARMANDO SESTINI": 24,
+    "ARTHUR WEINGRILL": 36,
+    "AZEVEDO SOARES": 70,
+    "BAIRRO DO ITAIM": 24,
+    "BAIRRO JUNDIAIZINHO": 33,
+    "BELEM DA SERRA": 42,
+    "BENEDITO APARECIDO TAVARES PROF": 38,
+    "BENEDITO FAGUNDES MARQUES": 36,
+    "BUENO DE AZEVEDO FILHO PROF": 35,
+    "CARLOS AUGUSTO DE PADUA FLEURY PROF": 25,
+    "CELESTINA VALENTE LENGENFELDER PROFA": 52,
+    "CHACARA CAMPONESA JARDIM VASSOURAS": 50,
+    "DOMINGOS CAMBIAGHI PROF": 62,
+    "DR. MARIO TOLEDO DE MORAES": 75,
+    "DR. NELSON MANZANARES": 33,
+    "ELCIO JOSE PEREIRA COTRIM PROF": 34,
+    "ELVIRA PARADA MANGA PROFA": 57,
+    "FRANCISCO GONCALVES VIEIRA PROF": 47,
+    "HERMELINA DE ALBUQUERQUE PASSARELLA PROFA": 69,
+    "IRACI SARTORI VIEIRA DA SILVA PROFA": 44,
+    "ISAIAS LUIZ MATIAZZO": 19,
+    "ISAURA DE MIRANDA BOTTO PROFA": 41,
+    "ISAURA VALENTINI HANSER PROFA": 34,
+    "IVONE DOS ANJOS DA SILVA CAMPOS PROFA": 30,
+    "JARDIM ALEGRIA II": 49,
+    "JARDIM DAS ROSAS": 50,
+    "JARDIM SAO FRANCISCO": 27,
+    "JARDIM SILVIA II": 70,
+    "JOAQUIM MARQUES DA SILVA SOBRINHO TTE": 27,
+    "JOCIMARA VIEIRA DA SILVA PROFA": 44,
+    "JOSE CARLOS DA SILVA JUNIOR": 27,
+    "JOSE DE BARROS MARTINS EDITOR": 42,
+    "JOSE PARADA PROFESSOR": 59,
+    "JOSE ROBERTO MELCHIOR DR": 57,
+    "KATIA MARIA TARIFA LEME TONELLI PROFA": 60,
+    "LENITA CORREA CAMARGO PROFA": 38,
+    "LUIZ ALEXANDRE DOS SANTOS VEREADOR": 41,
+    "LYDIA SCALET WALKER PROFA": 41,
+    "MARIA ZEZA GOMES DE OLIVEIRA": 22,
+    "NAIR HANNICKEL ROMARO": 15,
+    "NIDE ZAIM CARDOSO PROFA": 33,
+    "ODARICO OLIVEIRA NASCIMENTO PROF": 15,
+    "OLINDO DARTORA DR": 28,
+    "OTTO WEISZFLOG": 45,
+    "OZILDE ALBUQUERQUE PASSARELLA DR": 48,
+    "PARQUE CENTO E VINTE II": 67,
+    "PAULO DUARTE": 32,
+    "PEDRO GALRAO DO NASCIMENTO": 24,
+    "PEDRO LELIS DE SOUZA PREFEITO": 40,
+    "PEDRO PAULO DE AGUIAR": 44,
+    "PIETRO PETRI": 46,
+    "RITUCO MITANI PROFA": 37,
+    "ROGERIO LEVORIN PROF": 55,
+    "SUZANA DIAS": 35,
+    "ULYSSES SANCHES RAMIRES PROF": 31,
+    "VINCENZO LOBASSI": 25,
+    "WALTER RIBAS DE ANDRADE PROF EE": 19,
+    "WALTHER WEISZFLOG": 16,
+    "ZILTON BICUDO PROF": 43
+};
 
     const escolasList = Object.keys(escolasPrevisto).sort();
 
-    // Lista de formações com data
     const formacoesList = [
         { nome: "Plataformas Leia e Redação", data: "05/02/2026" },
         { nome: "Tecnologia", data: "09/03/2026" },
@@ -247,7 +339,7 @@
     let registrosCache = {}; // { escola: { formacaoNome: { realizado, id } } }
     let currentEscola = null;
 
-    // ========== FIRESTORE CRUD ==========
+    // ========== FIRESTORE ==========
     async function carregarTodosRegistros() {
         const snapshot = await db.collection("formacoes_participacao").get();
         const registros = {};
@@ -281,11 +373,66 @@
             if (!registrosCache[escola]) registrosCache[escola] = {};
             registrosCache[escola][formacaoNome] = { realizado: data.realizado, id: docRef.id };
         }
-        await renderDashboard();
+        await renderDashboard();       // atualiza cards + barra global
         if (currentEscola === escola) await carregarTabelaRegistros(escola);
     }
 
-    // ========== DASHBOARD CARDS ==========
+    // ========== FUNÇÃO PRINCIPAL: BARRA GLOBAL ÚNICA (TOTAL CONSOLIDADO) ==========
+    function atualizarBarraGlobal() {
+        const totalPrevistoAllEscolas = escolasList.reduce((acc, escola) => acc + (escolasPrevisto[escola] || 0), 0);
+        const totalFormacoes = formacoesList.length;
+        const totalEsperadoGlobal = totalPrevistoAllEscolas * 1;
+        
+        let totalRealizadoGlobal = 0;
+        for (let escola of escolasList) {
+            const registrosEscola = registrosCache[escola] || {};
+            for (let form of formacoesList) {
+                totalRealizadoGlobal += registrosEscola[form.nome]?.realizado || 0;
+            }
+        }
+        
+        const percentualGlobal = totalEsperadoGlobal > 0 ? (totalRealizadoGlobal / totalEsperadoGlobal) * 100 : 0;
+        let farolClass = "vermelho";
+        let farolTexto = "🔴 Crítico (<50%)";
+        let barColorClass = "fill-vermelho";
+        if (percentualGlobal >= 80) {
+            farolClass = "verde";
+            farolTexto = "🟢 EXCELENTE (≥80%) · Meta superada/atingida";
+            barColorClass = "fill-verde";
+        } else if (percentualGlobal >= 50) {
+            farolClass = "amarelo";
+            farolTexto = "🟡 ATENÇÃO (50% - 79%) · Em andamento";
+            barColorClass = "fill-amarelo";
+        }
+        
+        // atualiza elementos DOM
+        const spanRealizado = document.getElementById("globalRealizado");
+        const spanEsperado = document.getElementById("globalEsperado");
+        const spanPercentual = document.getElementById("globalPercentual");
+        const globalFarolSpan = document.getElementById("globalFarolStatus");
+        const progressFill = document.getElementById("globalProgressFill");
+        
+        if (spanRealizado) spanRealizado.innerText = totalRealizadoGlobal.toLocaleString();
+        if (spanEsperado) spanEsperado.innerText = totalEsperadoGlobal.toLocaleString();
+        if (spanPercentual) spanPercentual.innerText = `${Math.round(percentualGlobal)}%`;
+        if (globalFarolSpan) {
+            globalFarolSpan.innerHTML = `<i class="fas fa-chart-line"></i> ${farolTexto}`;
+            globalFarolSpan.style.borderLeftColor = percentualGlobal >= 80 ? "#2ecc71" : (percentualGlobal >= 50 ? "#f39c12" : "#e74c3c");
+        }
+        if (progressFill) {
+            progressFill.style.width = `${Math.min(100, percentualGlobal)}%`;
+            progressFill.className = `progress-fill ${barColorClass}`;
+        }
+        
+        // muda a cor da borda do card global dinamicamente
+        const globalCardDiv = document.getElementById("globalDynamicCard");
+        if (globalCardDiv) {
+            const borderColor = percentualGlobal >= 80 ? "#2ecc71" : (percentualGlobal >= 50 ? "#f39c12" : "#e74c3c");
+            globalCardDiv.style.borderLeft = `5px solid ${borderColor}`;
+        }
+    }
+
+    // ========== DASHBOARD CARDS (ESCOLAS) ==========
     async function renderDashboard() {
         const container = document.getElementById("cardsContainer");
         if (!container) return;
@@ -296,11 +443,11 @@
             const registrosEscola = registrosCache[escola] || {};
             let totalRealizado = 0;
             for (let form of formacoesList) {
-                const realiz = registrosEscola[form.nome]?.realizado || 0;
-                totalRealizado += realiz;
+                totalRealizado += registrosEscola[form.nome]?.realizado || 0;
             }
-            const totalEsperado = previsto * 1;
-            const percentual = totalEsperado > 0 ? (totalRealizado / totalEsperado) * 100 : 0;
+            // Cálculo usado: total esperado para farol escola = previsto * 1 (conforme lógica original do sistema para manter consistência)
+            const totalEsperadoEscola = previsto; 
+            const percentual = totalEsperadoEscola > 0 ? (totalRealizado / totalEsperadoEscola) * 100 : 0;
             let corClasse = "vermelho";
             let corProgresso = "fill-vermelho";
             if (percentual >= 80) { corClasse = "verde"; corProgresso = "fill-verde"; }
@@ -321,7 +468,7 @@
                     <span>✅ Total Realizado: ${totalRealizado}</span>
                     <span>📊 ${Math.round(percentual)}%</span>
                 </div>
-                <div style="font-size:0.7rem; margin-top:8px;">🎯 Esperado: ${totalEsperado} participações</div>
+                <div style="font-size:0.7rem; margin-top:8px;">🎯 Esperado: ${previsto} </div>
             `;
             card.addEventListener("click", () => {
                 document.getElementById("escolaSelect").value = escola;
@@ -331,9 +478,11 @@
             });
             container.appendChild(card);
         }
+        // Após renderizar as escolas, atualiza a barra global
+        atualizarBarraGlobal();
     }
 
-    // ========== TABELA DE REGISTROS POR ESCOLA ==========
+    // ========== TABELA REGISTROS POR ESCOLA ==========
     async function carregarTabelaRegistros(escola) {
         const tbody = document.getElementById("registrosTableBody");
         if (!tbody) return;
@@ -379,22 +528,31 @@
         }
     }
 
-    // ========== PDF GERAL ==========
+    // ========== PDF GERAL (INCLUI INFORMAÇÕES GLOBAIS OPCIONAL, MAS MANTER TABELA ESCOLAS) ==========
     async function gerarPDFGeral() {
         const linhas = [];
-        const totalFormacoes = formacoesList.length;
+        const totalFormacoesCount = formacoesList.length;
+        // calcula agregados também para exibir no rodapé do PDF
+        let totalPrevistoGeral = 0;
+        let totalRealizadoGeral = 0;
         for (let escola of escolasList) {
-            const previsto = escolasPrevisto[escola];
+            const previstoEsc = escolasPrevisto[escola];
+            totalPrevistoGeral += previstoEsc;
             const registrosEscola = registrosCache[escola] || {};
-            let totalRealizado = 0;
+            let somaRealizados = 0;
             for (let form of formacoesList) {
-                totalRealizado += registrosEscola[form.nome]?.realizado || 0;
+                somaRealizados += registrosEscola[form.nome]?.realizado || 0;
             }
-            const totalEsperado = previsto * 1;
-            const percentual = totalEsperado > 0 ? (totalRealizado / totalEsperado) * 100 : 0;
+            totalRealizadoGeral += somaRealizados;
+            const totalEsperadoEsc = previstoEsc;
+            const percentual = totalEsperadoEsc > 0 ? (somaRealizados / totalEsperadoEsc) * 100 : 0;
             let farol = percentual >= 80 ? "🟢 Verde" : (percentual >= 50 ? "🟡 Amarelo" : "🔴 Vermelho");
-            linhas.push(`<tr><td>${escola}</td><td>${previsto}</td><td>${totalRealizado}</td><td>${Math.round(percentual)}%</td><td>${farol}</td></tr>`);
+            linhas.push(`<tr><td>${escola}</td><td>${previstoEsc}</td><td>${somaRealizados}</td><td>${Math.round(percentual)}%</td><td>${farol}</td></tr>`);
         }
+        const totalEsperadoGlobalPDF = totalPrevistoGeral * 1;
+        const percentGlobalPDF = totalEsperadoGlobalPDF > 0 ? (totalRealizadoGeral / totalEsperadoGlobalPDF) * 100 : 0;
+        const globalFarolTextoPDF = percentGlobalPDF >= 80 ? "🟢 VERDE (≥80%)" : (percentGlobalPDF >= 50 ? "🟡 AMARELO" : "🔴 VERMELHO");
+        
         const div = document.createElement('div');
         div.style.position = 'fixed';
         div.style.top = '-9999px';
@@ -406,31 +564,31 @@
         div.style.fontFamily = 'Inter, sans-serif';
         div.innerHTML = `
             <div style="text-align:center; margin-bottom:25px;">
-                <h2 style="color:#0a2f6c;">URE CAIEIRAS - Relatório de Participação nas Formações</h2>
-                <h3>Público Previsto × Realizado (Total)</h3>
-                <p>Total de escolas: ${escolasList.length} | Formações: ${totalFormacoes}</p>
-                <p>Esperado total = (Previsto por escola) × ${totalFormacoes}</p>
+                <h2 style="color:#0a2f6c;">URE CAIEIRAS - Relatório de Participação nas Formações 2026</h2>
+                <h3>Público Previsto × Realizado (Consolidado)</h3>
+                <p>Total de escolas: ${escolasList.length} | Formações: ${totalFormacoesCount}</p>
+                <p style="background:#f0f2f5; padding:8px; border-radius:12px;"><strong>📊 FAROL GLOBAL:</strong> ${totalRealizadoGeral.toLocaleString()} participações realizadas de ${totalEsperadoGlobalPDF.toLocaleString()} esperadas → ${Math.round(percentGlobalPDF)}% - ${globalFarolTextoPDF}</p>
                 <p>Gerado em ${new Date().toLocaleString()}</p>
             </div>
             <table border="1" cellpadding="6" style="width:100%; border-collapse:collapse;">
                 <thead><tr style="background:#0a2f6c; color:white;"><th>Escola</th><th>Previsto</th><th>Realizado (Total)</th><th>Percentual</th><th>Farol</th></tr></thead>
                 <tbody>${linhas.join('')}</tbody>
             </table>
-            <p style="margin-top:20px;">Legenda: Farol Verde (≥80%) | Amarelo (50%-79%) | Vermelho (<50%)</p>
+            <p style="margin-top:20px;">Legenda: Farol Verde (≥80%) | Amarelo (50%-79%) | Vermelho (<50%) | Farol Global consolidado baseado em todas as escolas e 8 formações.</p>
         `;
         document.body.appendChild(div);
-        const canvas = await html2canvas(div, { scale: 1 });
+        const canvas = await html2canvas(div, { scale: 1.5 });
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('Portrait', 'mm', 'a4');
         const imgWidth = 205;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
-        pdf.save(`Relatorio_Participacao_Formacoes.pdf`);
+        pdf.save(`Relatorio_Participacao_Formacoes_Global.pdf`);
         document.body.removeChild(div);
     }
 
-    // ========== POPULAR SELECTS ==========
+    // ========== POPULARS ==========
     function popularSelectEscola() {
         const select = document.getElementById("escolaSelect");
         select.innerHTML = '<option value="">Selecione a escola</option>';
@@ -442,6 +600,7 @@
         });
     }
 
+    // EVENTOS
     document.getElementById("escolaSelect").addEventListener("change", async (e) => {
         const escola = e.target.value;
         if (!escola) {
@@ -455,11 +614,13 @@
 
     document.getElementById("gerarPDFGeral").addEventListener("click", gerarPDFGeral);
 
-    // ========== INIT ==========
+    // ========== INITIALIZE ==========
     (async function init() {
         popularSelectEscola();
         await carregarTodosRegistros();
-        await renderDashboard();
+        await renderDashboard();   // já chama atualizarBarraGlobal dentro do renderDashboard
+        // garantia extra de sincronia visual
+        atualizarBarraGlobal();
     })();
 </script>
 </body>
